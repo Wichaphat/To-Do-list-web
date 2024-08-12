@@ -1,0 +1,224 @@
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+}
+
+.container {
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    padding: 40px;
+    text-align: center;
+    margin-top: 20px;
+    position: relative;
+}
+
+h1 {
+    font-size: 36px;
+    color: #007bff;
+    margin-bottom: 20px;
+}
+
+.no-tasks-message {
+    font-size: 24px;
+    color: #777;
+    margin: 20px 0;
+}
+
+#noTasksContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 15px 30px;
+    cursor: pointer;
+    font-size: 24px;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+    width: 100%;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+li {
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    margin: 20px 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding-top: 30px; /* Add padding to create space for the bullet */
+}
+
+/* Color Bullet */
+.color-bullet {
+    width: 60px; /* Increased width for oval shape */
+    height: 20px; /* Height remains smaller than width */
+    border-radius: 20px; /* Half of the height for a perfect oval */
+    position: absolute;
+    top: 10px; /* Position at the top */
+    left: 10px; /* Position at the left */
+    background-color: inherit;
+}
+
+.subject-header-container {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    position: relative; /* Needed for the color bullet to be positioned relative to this container */
+}
+
+.subject-header {
+    font-size: 24px;
+    font-weight: bold;
+    margin-right: 0;
+    word-break: break-word;
+    display: inline;
+}
+
+.dropdown-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    padding: 0;
+    margin-left: 5px;
+    display: inline;
+    vertical-align: middle;
+    color: black; /* Change arrow color to black */
+}
+
+.dropdown-btn:focus {
+    outline: none;
+}
+
+button.delete {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 24px;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 0;
+    font-weight: bold;
+}
+
+button.delete:hover {
+    color: #a71d2a;
+}
+
+.description {
+    display: none;
+    margin-top: 10px;
+    font-size: 20px;
+    margin-left: 20px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    width: calc(100% - 40px);
+}
+
+/* Plus Sign Button */
+.plus-sign {
+    background-color: #007bff;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 36px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 20px;
+    bottom: -30px;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: #f9f9f9;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+input[type="text"],
+input[type="color"],
+textarea {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    font-size: 18px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}

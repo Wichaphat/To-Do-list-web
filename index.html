@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>To-do List</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="animate__animated animate__fadeIn">To-do List</h1>
+        <div id="noTasksContainer">
+            <p id="noTasksMessage" class="no-tasks-message">No tasks added yet</p>
+        </div>
+        <ul id="taskList" class="animate__animated animate__fadeIn"></ul>
+        <button id="openModalBtn" class="plus-sign">+</button> <!-- Moved inside the container -->
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add New Task</h2>
+            <input type="text" id="subjectInput" placeholder="Task Subject">
+            
+            <!-- Color Picker with Label -->
+            <label for="colorInput" class="color-label">Select Color:</label>
+            <input type="color" id="colorInput" value="#007bff">
+            
+            <textarea id="descriptionInput" placeholder="Task Description"></textarea>
+            <button id="addTaskBtn">Add Task</button>
+        </div>
+    </div>
+    
+
+    <script src="script.js"></script>
+</body>
+</html>
