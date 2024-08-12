@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
         noTasksContainer.style.display = 'none';
 
         const listItem = document.createElement('li');
+        listItem.style.borderLeftColor = color; // Set initial color of the strip
 
         // Create and style the custom oval color picker
         const colorPicker = document.createElement('div');
@@ -43,16 +44,14 @@ document.addEventListener('DOMContentLoaded', function () {
         colorInput.style.cursor = 'pointer';
 
         // Update the oval and border color when a new color is selected
-        colorInput.addEventListener('input', function () {
-            colorPicker.style.backgroundColor = colorInput.value;
-            listItem.style.borderLeftColor = colorInput.value;
+        colorInput.addEventListener('change', function () {
+            const newColor = colorInput.value;
+            colorPicker.style.backgroundColor = newColor;
+            listItem.style.borderLeftColor = newColor;
         });
 
-        // Position the hidden input over the color picker and trigger it on click
-        colorPicker.addEventListener('click', function (event) {
-            const rect = colorPicker.getBoundingClientRect();
-            colorInput.style.left = `${rect.left}px`;
-            colorInput.style.top = `${rect.top}px`;
+        // Ensure the color input can be re-opened
+        colorPicker.addEventListener('click', function () {
             colorInput.click();
         });
 
