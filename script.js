@@ -7,26 +7,76 @@ document.addEventListener('DOMContentLoaded', function () {
     const noTasksMessage = document.getElementById('noTasksMessage');
     const noTasksContainer = document.getElementById('noTasksContainer');
 
-    openModalBtn.addEventListener('click', function () {
-        modal.style.display = 'block';
-    });
+    // IndexedDB setup
+    let db;
+    const request = indexedDB.open('tasksDatabase', 1);
 
-    closeBtn.addEventListener('click', function () {
-        modal.style.display = 'none';
-    });
+    request.onupgradeneeded = function (event) {
+        db = event.target.result;
+        const objectStore = db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
+        objectStore.createIndex('subject', 'subject', { unique: false });
+        objectStore.createIndex('description', 'description', { unique: false });
+        objectStore.createIndex('color', 'color', { unique: false });
+    };
 
-    window.addEventListener('click', function (event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
+    request.onsuccess = function (event) {
+        db = event.target.result;
+        loadTasks(); // Load tasks on page load
+    };
 
-    function addTask(subject, description, color) {
+    request.onerror = function (event) {
+        console.error('Database error:', event.target.errorCode);
+    };
+
+    // Function to add a task to IndexedDB
+    function addTaskToDB(task) {
+        const transaction = db.transaction(['tasks'], 'readwrite');
+        const objectStore = transaction.objectStore('tasks');
+        const request = objectStore.add(task);
+
+        request.onsuccess = function () {
+            console.log('Task added to the database');
+        };
+
+        request.onerror = function () {
+            console.error('Error adding task to the database');
+        };
+    }
+
+    // Function to load tasks from IndexedDB
+    function loadTasks() {
+        const transaction = db.transaction(['tasks'], 'readonly');
+        const objectStore = transaction.objectStore('tasks');
+        const request = objectStore.getAll();
+
+        request.onsuccess = function (event) {
+            const tasks = event.target.result;
+            tasks.forEach(task => addTask(task.subject, task.description, task.color, false));
+        };
+    }
+
+    // Function to delete a task from IndexedDB
+    function deleteTaskFromDB(id) {
+        const transaction = db.transaction(['tasks'], 'readwrite');
+        const objectStore = transaction.objectStore('tasks');
+        const request = objectStore.delete(id);
+
+        request.onsuccess = function () {
+            console.log('Task deleted from the database');
+        };
+
+        request.onerror = function () {
+            console.error('Error deleting task from the database');
+        };
+    }
+
+    // Function to add a task to the UI and optionally to IndexedDB
+    function addTask(subject, description, color, saveToDB = true) {
         noTasksMessage.style.display = 'none';
         noTasksContainer.style.display = 'none';
 
         const listItem = document.createElement('li');
-        listItem.style.borderLeftColor = color; // Set initial color of the strip
+        listItem.style.borderLeftColor = color;
 
         // Create and style the custom oval color picker
         const colorPicker = document.createElement('div');
@@ -50,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function () {
             listItem.style.borderLeftColor = newColor;
         });
 
-        // Ensure the color input can be re-opened
         colorPicker.addEventListener('click', function () {
             colorInput.click();
         });
@@ -95,16 +144,24 @@ document.addEventListener('DOMContentLoaded', function () {
             event.stopPropagation(); // Prevent toggling the description
             taskList.removeChild(listItem);
             checkIfTasksExist();
+
+            // Delete from IndexedDB
+            deleteTaskFromDB(listItem.dataset.id);
         });
         listItem.appendChild(deleteBtn);
 
-        // Toggle description visibility by clicking on the task box
         listItem.addEventListener('click', function () {
             const isDescriptionHidden = descriptionPara.style.display === 'none';
             descriptionPara.style.display = isDescriptionHidden ? 'block' : 'none';
         });
 
+        // Append the task to the task list
         taskList.appendChild(listItem);
+
+        // Save to IndexedDB if required
+        if (saveToDB) {
+            addTaskToDB({ subject, description, color });
+        }
 
         checkIfTasksExist();
     }
