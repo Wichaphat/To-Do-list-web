@@ -7,10 +7,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const noTasksMessage = document.getElementById('noTasksMessage');
     const noTasksContainer = document.getElementById('noTasksContainer');
 
-    const sortable = new Sortable(taskList, {
-        animation: 150,
-    });
-
     openModalBtn.addEventListener('click', function () {
         modal.style.display = 'block';
     });
@@ -31,11 +27,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const listItem = document.createElement('li');
 
-        // Create and style the color bullet
-        const colorBullet = document.createElement('div');
-        colorBullet.classList.add('color-bullet');
-        colorBullet.style.backgroundColor = color;
-        listItem.appendChild(colorBullet);
+        // Create and style the custom oval color picker
+        const colorPicker = document.createElement('div');
+        colorPicker.classList.add('color-oval');
+        colorPicker.style.backgroundColor = color;
+
+        // Hidden color input
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.value = color;
+        colorInput.style.position = 'absolute';
+        colorInput.style.opacity = '0';
+        colorInput.style.width = '100%';
+        colorInput.style.height = '100%';
+        colorInput.style.cursor = 'pointer';
+
+        // Update the oval and border color when a new color is selected
+        colorInput.addEventListener('input', function () {
+            colorPicker.style.backgroundColor = colorInput.value;
+            listItem.style.borderLeftColor = colorInput.value;
+        });
+
+        // Position the hidden input over the color picker and trigger it on click
+        colorPicker.addEventListener('click', function (event) {
+            const rect = colorPicker.getBoundingClientRect();
+            colorInput.style.left = `${rect.left}px`;
+            colorInput.style.top = `${rect.top}px`;
+            colorInput.click();
+        });
+
+        colorPicker.appendChild(colorInput);
+        listItem.appendChild(colorPicker);
 
         const subjectHeaderContainer = document.createElement('div');
         subjectHeaderContainer.classList.add('subject-header-container');
@@ -52,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         subjectHeaderContainer.appendChild(subjectHeader);
 
+        // Add the dropdown arrow next to the task name
         const dropdownBtn = document.createElement('button');
         dropdownBtn.innerText = '▼';
         dropdownBtn.classList.add('dropdown-btn');
@@ -75,23 +98,21 @@ document.addEventListener('DOMContentLoaded', function () {
         const deleteBtn = document.createElement('button');
         deleteBtn.innerText = '✖';
         deleteBtn.classList.add('delete');
-        deleteBtn.addEventListener('click', function () {
+        deleteBtn.addEventListener('click', function (event) {
+            event.stopPropagation(); // Prevent toggling the description
             taskList.removeChild(listItem);
             checkIfTasksExist();
         });
         listItem.appendChild(deleteBtn);
 
-        taskList.appendChild(listItem);
-
-        dropdownBtn.addEventListener('click', function () {
-            if (descriptionPara.style.display === 'none') {
-                descriptionPara.style.display = 'block';
-                dropdownBtn.innerText = '▲';
-            } else {
-                descriptionPara.style.display = 'none';
-                dropdownBtn.innerText = '▼';
-            }
+        // Toggle description visibility by clicking on the task box
+        listItem.addEventListener('click', function () {
+            const isDescriptionHidden = descriptionPara.style.display === 'none';
+            descriptionPara.style.display = isDescriptionHidden ? 'block' : 'none';
+            dropdownBtn.innerText = isDescriptionHidden ? '▲' : '▼';
         });
+
+        taskList.appendChild(listItem);
 
         checkIfTasksExist();
     }

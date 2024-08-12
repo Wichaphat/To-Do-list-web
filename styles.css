@@ -75,25 +75,29 @@ li {
     display: flex;
     flex-direction: column;
     position: relative;
-    padding-top: 30px; /* Add padding to create space for the bullet */
+    padding-top: 30px;
+    cursor: pointer;
+    border-left: 5px solid #007bff; /* Indicate task color on the left border */
 }
 
-/* Color Bullet */
-.color-bullet {
-    width: 60px; /* Increased width for oval shape */
-    height: 20px; /* Height remains smaller than width */
-    border-radius: 20px; /* Half of the height for a perfect oval */
+/* Oval Color Picker for Task Box */
+.color-oval {
+    width: 40px;  /* Oval width */
+    height: 20px; /* Oval height */
+    border-radius: 20px; /* Border radius to make it oval */
     position: absolute;
-    top: 10px; /* Position at the top */
-    left: 10px; /* Position at the left */
-    background-color: inherit;
+    top: 10px;
+    left: 10px;
+    background-color: inherit; /* Background color will match the selected color */
+    cursor: pointer;
 }
 
+/* Subject Header Container */
 .subject-header-container {
     display: inline-flex;
     align-items: center;
     width: fit-content;
-    position: relative; /* Needed for the color bullet to be positioned relative to this container */
+    position: relative;
 }
 
 .subject-header {
@@ -165,6 +169,12 @@ button.delete:hover {
     transform: translateX(-50%);
     margin-top: 20px;
     bottom: -30px;
+    transition: transform 0.3s ease;
+    transform-origin: center;
+}
+
+.plus-sign:hover {
+    transform: translateX(-50%) scale(1.1);
 }
 
 /* Modal Styles */
@@ -206,8 +216,16 @@ button.delete:hover {
     cursor: pointer;
 }
 
+/* Square Color Picker in Modal */
+input[type="color"] {
+    cursor: pointer;
+    width: 30px; /* Square width */
+    height: 30px; /* Square height */
+    border: none;
+    padding: 0;
+}
+
 input[type="text"],
-input[type="color"],
 textarea {
     display: block;
     width: 100%;
