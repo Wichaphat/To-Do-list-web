@@ -7,36 +7,49 @@ document.addEventListener('DOMContentLoaded', function () {
     const noTasksMessage = document.getElementById('noTasksMessage');
     const noTasksContainer = document.getElementById('noTasksContainer');
 
-    openModalBtn.addEventListener('click', function () {
-        modal.style.display = 'block';
-    });
+    // Load tasks from LocalStorage on page load
+    function loadTasksFromLocalStorage() {
+        const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        tasks.forEach(task => addTaskToUI(task));
+    }
 
-    closeBtn.addEventListener('click', function () {
-        modal.style.display = 'none';
-    });
+    // Save tasks to LocalStorage
+    function saveTasksToLocalStorage(tasks) {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
 
-    window.addEventListener('click', function (event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
+    // Get all tasks from LocalStorage
+    function getTasksFromLocalStorage() {
+        return JSON.parse(localStorage.getItem('tasks')) || [];
+    }
 
+    // Add a task to the UI and LocalStorage
     function addTask(subject, description, color) {
+        const tasks = getTasksFromLocalStorage();
+        const task = { id: Date.now(), subject, description, color };
+        tasks.push(task);
+        saveTasksToLocalStorage(tasks);
+        addTaskToUI(task);
+    }
+
+    // Add task to the UI
+    function addTaskToUI(task) {
         noTasksMessage.style.display = 'none';
         noTasksContainer.style.display = 'none';
 
         const listItem = document.createElement('li');
-        listItem.style.borderLeftColor = color; // Set initial color of the strip
+        listItem.style.borderLeftColor = task.color;
+        listItem.dataset.id = task.id;
 
         // Create and style the custom oval color picker
         const colorPicker = document.createElement('div');
         colorPicker.classList.add('color-oval');
-        colorPicker.style.backgroundColor = color;
+        colorPicker.style.backgroundColor = task.color;
 
         // Hidden color input
         const colorInput = document.createElement('input');
         colorInput.type = 'color';
-        colorInput.value = color;
+        colorInput.value = task.color;
         colorInput.style.position = 'absolute';
         colorInput.style.opacity = '0';
         colorInput.style.width = '100%';
@@ -48,9 +61,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const newColor = colorInput.value;
             colorPicker.style.backgroundColor = newColor;
             listItem.style.borderLeftColor = newColor;
+
+            // Update the color in LocalStorage
+            const tasks = getTasksFromLocalStorage();
+            const updatedTasks = tasks.map(t => t.id === task.id ? { ...t, color: newColor } : t);
+            saveTasksToLocalStorage(updatedTasks);
         });
 
-        // Ensure the color input can be re-opened
         colorPicker.addEventListener('click', function () {
             colorInput.click();
         });
@@ -62,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function () {
         subjectHeaderContainer.classList.add('subject-header-container');
 
         const subjectHeader = document.createElement('h2');
-        subjectHeader.innerText = subject;
+        subjectHeader.innerText = task.subject;
         subjectHeader.classList.add('subject-header');
         subjectHeader.addEventListener('click', function () {
             subjectHeader.contentEditable = true;
@@ -70,13 +87,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         subjectHeader.addEventListener('blur', function () {
             subjectHeader.contentEditable = false;
+
+            // Update the subject in LocalStorage
+            const tasks = getTasksFromLocalStorage();
+            const updatedTasks = tasks.map(t => t.id === task.id ? { ...t, subject: subjectHeader.innerText } : t);
+            saveTasksToLocalStorage(updatedTasks);
         });
         subjectHeaderContainer.appendChild(subjectHeader);
 
         listItem.appendChild(subjectHeaderContainer);
 
         const descriptionPara = document.createElement('p');
-        descriptionPara.innerText = description;
+        descriptionPara.innerText = task.description;
         descriptionPara.classList.add('description');
         descriptionPara.style.display = 'none';
         descriptionPara.addEventListener('click', function () {
@@ -85,6 +107,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         descriptionPara.addEventListener('blur', function () {
             descriptionPara.contentEditable = false;
+
+            // Update the description in LocalStorage
+            const tasks = getTasksFromLocalStorage();
+            const updatedTasks = tasks.map(t => t.id === task.id ? { ...t, description: descriptionPara.innerText } : t);
+            saveTasksToLocalStorage(updatedTasks);
         });
         listItem.appendChild(descriptionPara);
 
@@ -95,6 +122,11 @@ document.addEventListener('DOMContentLoaded', function () {
             event.stopPropagation(); // Prevent toggling the description
             taskList.removeChild(listItem);
             checkIfTasksExist();
+
+            // Remove the task from LocalStorage
+            const tasks = getTasksFromLocalStorage();
+            const updatedTasks = tasks.filter(t => t.id !== task.id);
+            saveTasksToLocalStorage(updatedTasks);
         });
         listItem.appendChild(deleteBtn);
 
@@ -119,6 +151,24 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Open the modal when clicking the plus sign
+    openModalBtn.addEventListener('click', function () {
+        modal.style.display = 'block';
+    });
+
+    // Close the modal when clicking the close button
+    closeBtn.addEventListener('click', function () {
+        modal.style.display = 'none';
+    });
+
+    // Close the modal when clicking anywhere outside the modal
+    window.addEventListener('click', function (event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Add the task and close the modal
     addTaskBtn.addEventListener('click', function () {
         const subjectInput = document.getElementById('subjectInput');
         const descriptionInput = document.getElementById('descriptionInput');
@@ -141,5 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.style.display = 'none';
     });
 
+    // Initial load of tasks from LocalStorage
+    loadTasksFromLocalStorage();
     checkIfTasksExist();
 });
