@@ -74,12 +74,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         subjectHeaderContainer.appendChild(subjectHeader);
 
-        // Add the dropdown arrow next to the task name
-        const dropdownBtn = document.createElement('button');
-        dropdownBtn.innerText = '▼';
-        dropdownBtn.classList.add('dropdown-btn');
-        subjectHeaderContainer.appendChild(dropdownBtn);
-
         listItem.appendChild(subjectHeaderContainer);
 
         const descriptionPara = document.createElement('p');
@@ -109,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
         listItem.addEventListener('click', function () {
             const isDescriptionHidden = descriptionPara.style.display === 'none';
             descriptionPara.style.display = isDescriptionHidden ? 'block' : 'none';
-            dropdownBtn.innerText = isDescriptionHidden ? '▲' : '▼';
         });
 
         taskList.appendChild(listItem);
