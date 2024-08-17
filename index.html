@@ -14,25 +14,46 @@
             <p id="noTasksMessage" class="no-tasks-message">No tasks added yet</p>
         </div>
         <ul id="taskList" class="animate__animated animate__fadeIn"></ul>
-        <button id="openModalBtn" class="plus-sign">+</button> <!-- Moved inside the container -->
+        <button id="openModalBtn" class="plus-sign">+</button>
     </div>
 
-    <!-- Modal Structure -->
+    <!-- Modal for Choosing Task or Task Group -->
+    <div id="choiceModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Choose an Option</h2>
+            <button id="createTaskBtn">Create Task</button>
+            <button id="createGroupBtn">Create Task Group</button>
+        </div>
+    </div>
+
+    <!-- Modal for Creating Task -->
     <div id="taskModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2>Add New Task</h2>
             <input type="text" id="subjectInput" placeholder="Task Subject">
-            
-            <!-- Color Picker with Label -->
             <label for="colorInput" class="color-label">Select Color:</label>
             <input type="color" id="colorInput" value="#007bff">
-            
             <textarea id="descriptionInput" placeholder="Task Description"></textarea>
             <button id="addTaskBtn">Add Task</button>
         </div>
     </div>
-    
+
+    <!-- Modal for Creating Task Group -->
+    <div id="groupModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create Task Group</h2>
+            <input type="text" id="groupNameInput" placeholder="Group Name">
+            
+            <!-- Color Picker for Task Group Outline -->
+            <label for="groupColorInput" class="color-label">Select Group Outline Color:</label>
+            <input type="color" id="groupColorInput" value="#000000"> <!-- Default color black -->
+
+            <button id="addGroupBtn">Create Group</button>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
