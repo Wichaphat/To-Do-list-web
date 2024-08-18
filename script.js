@@ -15,9 +15,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize SortableJS for the main task list and all group lists
     const sortable = new Sortable(taskList, {
         animation: 150,
-        delay: 200,
+        delay: 300, // Increased delay for starting a drag operation on touch devices
         delayOnTouchOnly: true,
-        touchStartThreshold: 10,
+        touchStartThreshold: 20, // Increased threshold for touch devices
         group: {
             name: 'tasks',
             pull: true,
@@ -370,20 +370,30 @@ document.addEventListener('DOMContentLoaded', function () {
         subjectHeader.innerText = task.subject;
         subjectHeader.classList.add('subject-header');
 
+        // Disable dragging if the user is trying to edit or view the task details
+        let isDraggingDisabled = false;
+
         subjectHeader.addEventListener('click', function (event) {
             event.stopPropagation();
             subjectHeader.contentEditable = true;
             subjectHeader.focus();
+            isDraggingDisabled = true;
         });
+
         subjectHeader.addEventListener('blur', function () {
             subjectHeader.contentEditable = false;
 
             const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
             const updatedTasks = data.tasks.map(t => t.id === task.id ? { ...t, subject: subjectHeader.innerText } : t);
             saveDataToLocalStorage({ tasks: updatedTasks, groups: data.groups });
-        });
-        subjectHeaderContainer.appendChild(subjectHeader);
 
+            // Re-enable dragging after editing
+            setTimeout(() => {
+                isDraggingDisabled = false;
+            }, 300);
+        });
+
+        subjectHeaderContainer.appendChild(subjectHeader);
         listItem.appendChild(subjectHeaderContainer);
 
         const descriptionPara = document.createElement('p');
@@ -395,13 +405,20 @@ document.addEventListener('DOMContentLoaded', function () {
             event.stopPropagation();
             descriptionPara.contentEditable = true;
             descriptionPara.focus();
+            isDraggingDisabled = true;
         });
+
         descriptionPara.addEventListener('blur', function () {
             descriptionPara.contentEditable = false;
 
             const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
             const updatedTasks = data.tasks.map(t => t.id === task.id ? { ...t, description: descriptionPara.innerText } : t);
             saveDataToLocalStorage({ tasks: updatedTasks, groups: data.groups });
+
+            // Re-enable dragging after editing
+            setTimeout(() => {
+                isDraggingDisabled = false;
+            }, 300);
         });
 
         listItem.appendChild(descriptionPara);
@@ -418,9 +435,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const updatedTasks = data.tasks.filter(t => t.id !== task.id);
             saveDataToLocalStorage({ tasks: updatedTasks, groups: data.groups });
         });
+
         listItem.appendChild(deleteBtn);
 
         listItem.addEventListener('click', function (event) {
+            if (isDraggingDisabled) {
+                return; // Prevent dragging if an interaction is happening
+            }
+
             if (!event.target.classList.contains('description') && !event.target.classList.contains('subject-header')) {
                 const isDescriptionHidden = descriptionPara.style.display === 'none';
                 descriptionPara.style.display = isDescriptionHidden ? 'block' : 'none';
