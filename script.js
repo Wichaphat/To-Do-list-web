@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const noTasksMessage = document.getElementById('noTasksMessage');
     const noTasksContainer = document.getElementById('noTasksContainer');
 
-    // Initialize SortableJS for the main task list
+    // Initialize SortableJS for the main task list and all group lists
     const sortable = new Sortable(taskList, {
         animation: 150,
         delay: 200,
@@ -20,8 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
         touchStartThreshold: 10,
         group: {
             name: 'tasks',
-            pull: true,   // Allow dragging from this list
-            put: true     // Allow dropping into this list
+            pull: true,
+            put: true
         },
         swapThreshold: 0.5,
         invertSwap: true,
@@ -31,58 +31,99 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Load tasks from LocalStorage on page load
+    // Load tasks and task groups from LocalStorage on page load
     function loadTasksFromLocalStorage() {
-        const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-        tasks.forEach(task => addTaskToUI(task));
+        const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+        const groupsById = {};
 
-        const groups = JSON.parse(localStorage.getItem('taskGroups')) || [];
-        groups.forEach(group => addTaskGroupToUI(group));
+        // Load groups first and keep a reference map
+        data.groups.forEach(group => {
+            const groupElement = addTaskGroupToUI(group);
+            groupsById[group.id] = groupElement;
+        });
+
+        // Reassign task groups to their parent groups if necessary
+        data.groups.forEach(group => {
+            if (group.parentGroupId && groupsById[group.parentGroupId]) {
+                const parentGroupElement = groupsById[group.parentGroupId];
+                const groupElement = groupsById[group.id];
+
+                if (parentGroupElement && groupElement && !parentGroupElement.contains(groupElement)) {
+                    parentGroupElement.querySelector('.group-list').appendChild(groupElement);
+                }
+            }
+        });
+
+        // Load tasks in the correct order
+        data.tasks.forEach(task => {
+            if (task.groupId) {
+                const groupElement = document.querySelector(`li.task-group[data-id="${task.groupId}"] .group-list`);
+                if (groupElement) {
+                    const taskElement = createTaskElement(task);
+                    groupElement.appendChild(taskElement);
+                }
+            } else {
+                addTaskToUI(task);
+            }
+        });
     }
 
-    // Save tasks to LocalStorage
-    function saveTasksToLocalStorage(tasks) {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
+    // Save tasks and groups to LocalStorage
+    function saveDataToLocalStorage(data) {
+        localStorage.setItem('todoData', JSON.stringify(data));
     }
 
-    // Save task groups to LocalStorage
-    function saveTaskGroupsToLocalStorage(groups) {
-        localStorage.setItem('taskGroups', JSON.stringify(groups));
-    }
-
-    // Save the current order of tasks to LocalStorage
+    // Save the current order of tasks and groups to LocalStorage
     function saveOrderToLocalStorage() {
-        const orderedTasks = [];
-        const orderedGroups = [];
+        const tasks = [];
+        const groups = [];
 
-        taskList.querySelectorAll('li.task-item').forEach((item) => {
-            const taskId = item.dataset.id;
-            const task = getTasksFromLocalStorage().find(t => t.id == taskId);
-            if (task) {
-                orderedTasks.push(task);
-            }
+        function processGroup(groupElement, parentGroupId = null) {
+            const groupId = groupElement.dataset.id;
+
+            // Process tasks within the group
+            groupElement.querySelectorAll(':scope > .group-list > .task-item').forEach((item) => {
+                tasks.push({
+                    id: item.dataset.id,
+                    subject: item.querySelector('.subject-header').innerText,
+                    description: item.querySelector('.description').innerText,
+                    color: item.querySelector('.color-oval').style.backgroundColor,
+                    groupId: groupId
+                });
+            });
+
+            // Process the group itself
+            groups.push({
+                id: groupId,
+                name: groupElement.querySelector('.group-header').innerText,
+                color: groupElement.style.borderColor,
+                display: groupElement.querySelector('.group-list').style.display, // Save the display state
+                parentGroupId: parentGroupId
+            });
+
+            // Recursively process nested groups
+            groupElement.querySelectorAll(':scope > .group-list > .task-group').forEach((childGroup) => {
+                processGroup(childGroup, groupId);
+            });
+        }
+
+        // Process top-level tasks (those not in any group)
+        taskList.querySelectorAll(':scope > .task-item').forEach((item) => {
+            tasks.push({
+                id: item.dataset.id,
+                subject: item.querySelector('.subject-header').innerText,
+                description: item.querySelector('.description').innerText,
+                color: item.querySelector('.color-oval').style.backgroundColor,
+                groupId: null
+            });
         });
 
-        taskList.querySelectorAll('li.task-group').forEach((group) => {
-            const groupId = group.dataset.id;
-            const taskGroup = getTaskGroupsFromLocalStorage().find(g => g.id == groupId);
-            if (taskGroup) {
-                orderedGroups.push(taskGroup);
-            }
+        // Process top-level groups
+        taskList.querySelectorAll(':scope > .task-group').forEach((groupElement) => {
+            processGroup(groupElement);
         });
 
-        saveTasksToLocalStorage(orderedTasks);
-        saveTaskGroupsToLocalStorage(orderedGroups);
-    }
-
-    // Get all tasks from LocalStorage
-    function getTasksFromLocalStorage() {
-        return JSON.parse(localStorage.getItem('tasks')) || [];
-    }
-
-    // Get all task groups from LocalStorage
-    function getTaskGroupsFromLocalStorage() {
-        return JSON.parse(localStorage.getItem('taskGroups')) || [];
+        saveDataToLocalStorage({ tasks, groups });
     }
 
     // Open the choice modal when clicking the plus sign
@@ -125,11 +166,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Add a task group to the UI
     function addTaskGroup(groupName, groupColor) {
         const groupId = Date.now();
-        const taskGroup = { id: groupId, name: groupName, color: groupColor, tasks: [] };
-        const groups = getTaskGroupsFromLocalStorage();
-        groups.push(taskGroup);
-        saveTaskGroupsToLocalStorage(groups);
-        addTaskGroupToUI(taskGroup);
+        const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+
+        const taskGroup = { id: groupId, name: groupName, color: groupColor, tasks: [], display: 'block', parentGroupId: null };
+        data.groups.push(taskGroup);
+        saveDataToLocalStorage(data);
+        return addTaskGroupToUI(taskGroup);
     }
 
     // Add a task group to the UI
@@ -142,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function () {
         groupItem.innerHTML = `
             <h2 class="group-header">${taskGroup.name}</h2>
             <button class="delete">✖</button>
-            <ul class="group-list"></ul>
+            <ul class="group-list" style="display: ${taskGroup.display || 'block'};"></ul>
             <div class="color-oval group-color-picker" style="background-color:${taskGroup.color};"></div>
         `;
 
@@ -166,7 +208,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Toggle task visibility within the group by clicking the group item
         groupItem.addEventListener('click', function (event) {
-            // Ensure toggle only happens if the click is not on the delete button, group header, task inside the group, or color picker
             if (!event.target.classList.contains('delete') &&
                 !event.target.classList.contains('group-header') &&
                 !event.target.closest('.task-item') &&
@@ -175,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const isOpen = groupList.style.display !== 'none';
                 if (groupList.children.length > 0) {  // Only allow closing if there are tasks inside
                     groupList.style.display = isOpen ? 'none' : 'block';
-                    groupItem.classList.toggle('closed-group', !isOpen);
+                    saveOrderToLocalStorage(); // Save the state after toggle
                 }
             }
         });
@@ -187,31 +228,25 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // Ensure the task group can be interacted with after dragging tasks in/out
-        groupList.addEventListener('dragover', function (event) {
-            event.preventDefault();
-            if (groupItem.classList.contains('closed-group')) {
-                groupItem.classList.remove('closed-group');
-                groupList.style.display = 'block';
+        // Feature: Expand group when dragging over
+        groupItem.addEventListener('dragover', function (event) {
+            event.preventDefault(); // Necessary to allow drop
+            if (groupList.style.display === 'none' && event.target !== groupItem) {
+                groupList.style.display = 'block'; // Expand the group when dragging over
+                saveOrderToLocalStorage(); // Save the new state
             }
         });
 
-        // Allow editing the group name by clicking the text
-        groupItem.querySelector('.group-header').addEventListener('click', function (event) {
-            event.stopPropagation(); // Prevent the group toggle click event from firing
-            const header = groupItem.querySelector('.group-header');
-            header.contentEditable = true;
-            header.focus();
+        // Feature: Preserve the display state when dragging the group itself
+        groupItem.addEventListener('dragstart', function (event) {
+            groupItem.classList.add('dragging');
         });
 
-        groupItem.querySelector('.group-header').addEventListener('blur', function () {
-            const header = groupItem.querySelector('.group-header');
-            header.contentEditable = false;
-
-            // Update the group name in LocalStorage
-            const groups = getTaskGroupsFromLocalStorage();
-            const updatedGroups = groups.map(g => g.id === taskGroup.id ? { ...g, name: header.innerText } : g);
-            saveTaskGroupsToLocalStorage(updatedGroups);
+        groupItem.addEventListener('dragend', function (event) {
+            groupItem.classList.remove('dragging');
+            const isOpen = groupList.style.display !== 'none';
+            groupList.style.display = isOpen ? 'block' : 'none'; // Restore the original state after drag
+            saveOrderToLocalStorage(); // Save the new state
         });
 
         // Handle changing the group outline color
@@ -230,10 +265,9 @@ document.addEventListener('DOMContentLoaded', function () {
             colorPicker.style.backgroundColor = newColor;
             groupItem.style.borderColor = newColor;
 
-            // Update the color in LocalStorage
-            const groups = getTaskGroupsFromLocalStorage();
-            const updatedGroups = groups.map(g => g.id === taskGroup.id ? { ...g, color: newColor } : g);
-            saveTaskGroupsToLocalStorage(updatedGroups);
+            const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+            const updatedGroups = data.groups.map(g => g.id === taskGroup.id ? { ...g, color: newColor } : g);
+            saveDataToLocalStorage({ tasks: data.tasks, groups: updatedGroups });
         });
 
         colorPicker.appendChild(colorInput);
@@ -242,15 +276,28 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Handle deleting the group
-        groupItem.querySelector('.delete').addEventListener('click', function () {
-            taskList.removeChild(groupItem);
-            const groups = getTaskGroupsFromLocalStorage();
-            const updatedGroups = groups.filter(g => g.id !== taskGroup.id);
-            saveTaskGroupsToLocalStorage(updatedGroups);
-            checkIfTasksExist();
+        groupItem.querySelector('.delete').addEventListener('click', function (event) {
+            event.stopPropagation();
+            deleteGroup(groupItem);
         });
 
         taskList.appendChild(groupItem);
+        checkIfTasksExist();
+        return groupItem;
+    }
+
+    function deleteGroup(groupItem) {
+        const groupId = groupItem.dataset.id;
+        const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+
+        // Remove the group and its associated tasks
+        const updatedGroups = data.groups.filter(g => g.id !== groupId);
+        const updatedTasks = data.tasks.filter(t => t.groupId !== groupId);
+
+        saveDataToLocalStorage({ tasks: updatedTasks, groups: updatedGroups });
+
+        // Immediately remove the group from the DOM
+        groupItem.remove();
         checkIfTasksExist();
     }
 
@@ -260,9 +307,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const groupColor = document.getElementById('groupColorInput').value;
 
         if (groupName) {
-            addTaskGroup(groupName, groupColor);
+            const groupElement = addTaskGroup(groupName, groupColor);
             document.getElementById('groupNameInput').value = '';
-            document.getElementById('groupColorInput').value = '#000000'; // Reset to default color
+            document.getElementById('groupColorInput').value = '#000000';
             groupModal.style.display = 'none';
         } else {
             alert('Please enter a group name.');
@@ -271,29 +318,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Add a task to the UI and LocalStorage
     function addTask(subject, description, color) {
-        const tasks = getTasksFromLocalStorage();
-        const task = { id: Date.now(), subject, description, color };
-        tasks.push(task);
-        saveTasksToLocalStorage(tasks);
+        const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+
+        const task = { id: Date.now(), subject, description, color, groupId: null };
+        data.tasks.push(task);
+        saveDataToLocalStorage(data);
         addTaskToUI(task);
     }
 
-    // Add task to the UI
-    function addTaskToUI(task) {
-        noTasksMessage.style.display = 'none';
-        noTasksContainer.style.display = 'none';
-
+    // Create a task element
+    function createTaskElement(task) {
         const listItem = document.createElement('li');
         listItem.style.borderLeftColor = task.color;
         listItem.dataset.id = task.id;
         listItem.classList.add('task-item');
 
-        // Create and style the custom oval color picker
         const colorPicker = document.createElement('div');
         colorPicker.classList.add('color-oval');
         colorPicker.style.backgroundColor = task.color;
 
-        // Hidden color input
         const colorInput = document.createElement('input');
         colorInput.type = 'color';
         colorInput.value = task.color;
@@ -303,16 +346,14 @@ document.addEventListener('DOMContentLoaded', function () {
         colorInput.style.height = '100%';
         colorInput.style.cursor = 'pointer';
 
-        // Update the oval and border color when a new color is selected
         colorInput.addEventListener('change', function () {
             const newColor = colorInput.value;
             colorPicker.style.backgroundColor = newColor;
             listItem.style.borderLeftColor = newColor;
 
-            // Update the color in LocalStorage
-            const tasks = getTasksFromLocalStorage();
-            const updatedTasks = tasks.map(t => t.id === task.id ? { ...t, color: newColor } : t);
-            saveTasksToLocalStorage(updatedTasks);
+            const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+            const updatedTasks = data.tasks.map(t => t.id === task.id ? { ...t, color: newColor } : t);
+            saveDataToLocalStorage({ tasks: updatedTasks, groups: data.groups });
         });
 
         colorPicker.addEventListener('click', function () {
@@ -329,19 +370,17 @@ document.addEventListener('DOMContentLoaded', function () {
         subjectHeader.innerText = task.subject;
         subjectHeader.classList.add('subject-header');
 
-        // Allow editing the subject header
         subjectHeader.addEventListener('click', function (event) {
-            event.stopPropagation(); // Prevent the task box click event from firing
+            event.stopPropagation();
             subjectHeader.contentEditable = true;
             subjectHeader.focus();
         });
         subjectHeader.addEventListener('blur', function () {
             subjectHeader.contentEditable = false;
 
-            // Update the subject in LocalStorage
-            const tasks = getTasksFromLocalStorage();
-            const updatedTasks = tasks.map(t => t.id === task.id ? { ...t, subject: subjectHeader.innerText } : t);
-            saveTasksToLocalStorage(updatedTasks);
+            const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+            const updatedTasks = data.tasks.map(t => t.id === task.id ? { ...t, subject: subjectHeader.innerText } : t);
+            saveDataToLocalStorage({ tasks: updatedTasks, groups: data.groups });
         });
         subjectHeaderContainer.appendChild(subjectHeader);
 
@@ -350,21 +389,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const descriptionPara = document.createElement('p');
         descriptionPara.innerText = task.description;
         descriptionPara.classList.add('description');
-        descriptionPara.style.display = 'none'; // Start hidden and show when the task is clicked
+        descriptionPara.style.display = 'none';
 
-        // Allow editing the description
         descriptionPara.addEventListener('click', function (event) {
-            event.stopPropagation(); // Prevent the task box click event from firing
+            event.stopPropagation();
             descriptionPara.contentEditable = true;
             descriptionPara.focus();
         });
         descriptionPara.addEventListener('blur', function () {
             descriptionPara.contentEditable = false;
 
-            // Update the description in LocalStorage
-            const tasks = getTasksFromLocalStorage();
-            const updatedTasks = tasks.map(t => t.id === task.id ? { ...t, description: descriptionPara.innerText } : t);
-            saveTasksToLocalStorage(updatedTasks);
+            const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+            const updatedTasks = data.tasks.map(t => t.id === task.id ? { ...t, description: descriptionPara.innerText } : t);
+            saveDataToLocalStorage({ tasks: updatedTasks, groups: data.groups });
         });
 
         listItem.appendChild(descriptionPara);
@@ -373,29 +410,32 @@ document.addEventListener('DOMContentLoaded', function () {
         deleteBtn.innerText = '✖';
         deleteBtn.classList.add('delete');
         deleteBtn.addEventListener('click', function (event) {
-            event.stopPropagation(); // Prevent toggling the description
-            taskList.removeChild(listItem);
+            event.stopPropagation();
+            listItem.parentElement.removeChild(listItem);
             checkIfTasksExist();
 
-            // Remove the task from LocalStorage
-            const tasks = getTasksFromLocalStorage();
-            const updatedTasks = tasks.filter(t => t.id !== task.id);
-            saveTasksToLocalStorage(updatedTasks);
+            const data = JSON.parse(localStorage.getItem('todoData')) || { tasks: [], groups: [] };
+            const updatedTasks = data.tasks.filter(t => t.id !== task.id);
+            saveDataToLocalStorage({ tasks: updatedTasks, groups: data.groups });
         });
         listItem.appendChild(deleteBtn);
 
-        // Toggle description visibility by clicking on the task box
         listItem.addEventListener('click', function (event) {
-            // Only toggle if the click wasn't on the description or the subject header
             if (!event.target.classList.contains('description') && !event.target.classList.contains('subject-header')) {
                 const isDescriptionHidden = descriptionPara.style.display === 'none';
                 descriptionPara.style.display = isDescriptionHidden ? 'block' : 'none';
             }
         });
 
-        taskList.appendChild(listItem);
+        return listItem;
+    }
 
+    // Add task to the UI
+    function addTaskToUI(task) {
+        const taskElement = createTaskElement(task);
+        taskList.appendChild(taskElement);
         checkIfTasksExist();
+        return taskElement;
     }
 
     function checkIfTasksExist() {
@@ -408,7 +448,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Add the task and close the modal
     addTaskBtn.addEventListener('click', function () {
         const subjectInput = document.getElementById('subjectInput');
         const descriptionInput = document.getElementById('descriptionInput');
@@ -431,7 +470,6 @@ document.addEventListener('DOMContentLoaded', function () {
         taskModal.style.display = 'none';
     });
 
-    // Initial load of tasks and groups from LocalStorage
     loadTasksFromLocalStorage();
     checkIfTasksExist();
 });
