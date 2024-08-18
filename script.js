@@ -12,12 +12,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const noTasksMessage = document.getElementById('noTasksMessage');
     const noTasksContainer = document.getElementById('noTasksContainer');
 
-    // Initialize SortableJS for the main task list and all group lists
+    // Drag delay settings
+    const dragDelay = 300; // Delay before drag starts
+    const touchStartThreshold = 20; // Threshold for touch devices
+
+    // Initialize SortableJS for the main task list
     const sortable = new Sortable(taskList, {
         animation: 150,
-        delay: 300, // Increased delay for starting a drag operation on touch devices
+        delay: dragDelay,
         delayOnTouchOnly: true,
-        touchStartThreshold: 20, // Increased threshold for touch devices
+        touchStartThreshold: touchStartThreshold,
         group: {
             name: 'tasks',
             pull: true,
@@ -198,6 +202,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 put: true
             },
             animation: 150,
+            delay: dragDelay, // Apply drag delay for tasks inside groups
+            delayOnTouchOnly: true,
+            touchStartThreshold: touchStartThreshold, // Apply touch threshold for tasks inside groups
             swapThreshold: 0.5,
             invertSwap: true,
             ghostClass: 'sortable-ghost',
